@@ -1,11 +1,15 @@
 package com.example.coolweather.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -14,7 +18,7 @@ import com.example.coolweather.util.HttpCallBackListener;
 import com.example.coolweather.util.HttpUtil;
 import com.example.coolweather.util.Utility;
 
-public class WeatherActivity extends Activity{
+public class WeatherActivity extends Activity implements OnClickListener{
 	private TextView cityName;
 	private TextView publishText;
 	private LinearLayout weatherInfo;
@@ -22,6 +26,8 @@ public class WeatherActivity extends Activity{
 	private TextView weatherDesp;
 	private TextView temp1;
 	private TextView temp2;
+	private Button switchCity;
+	private Button refreshWeather;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -35,14 +41,34 @@ public class WeatherActivity extends Activity{
 		weatherDesp = (TextView)findViewById(R.id.weather_desp);
 		temp1 = (TextView)findViewById(R.id.temp1);
 		temp2 = (TextView)findViewById(R.id.temp2);
+		switchCity = (Button)findViewById(R.id.switch_city);
+		refreshWeather = (Button)findViewById(R.id.refresh_weather);
 		String countryCode = getIntent().getStringExtra("country_code");
-		if (!countryCode.isEmpty()) {
+		if (!TextUtils.isEmpty(countryCode)) {
 			publishText.setText("同步中");
 			weatherInfo.setVisibility(View.INVISIBLE);
 			cityName.setVisibility(View.INVISIBLE);
 			queryWeatherCode(countryCode);
 		} else {
 			showWeather();
+		}
+		switchCity.setOnClickListener(this);
+		refreshWeather.setOnClickListener(this);
+	}
+	@Override
+	public void onClick(View v) {
+		if (v.getId() == R.id.switch_city) {
+			Intent intent = new Intent(this, ChooseAreaActivity.class);
+			intent.putExtra("from_weather_activity", true);
+			startActivity(intent);
+			finish();
+		} else if (v.getId() == R.id.refresh_weather) {
+			publishText.setText("同步中...");
+			SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+			String weatherCode = pref.getString("weather_code", "");
+			if (!TextUtils.isEmpty(weatherCode)) {
+				queryWeatherInfo(weatherCode);
+			}
 		}
 	}
 	/**
@@ -65,7 +91,7 @@ public class WeatherActivity extends Activity{
 			@Override
 			public void onFinish(String response) {
 				if ("countryCode".equals(type)) {
-					if (!response.isEmpty()) {
+					if (!TextUtils.isEmpty(response)) {
 						String[] array = response.split("\\|");
 						if (array != null && array.length == 2) {
 							String weatherCode = array[1];
